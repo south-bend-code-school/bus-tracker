@@ -28,19 +28,20 @@ function findlocation(){
     maximumAge: 0
   };
 
-  navigator.geolocation.getCurrentPosition(success, error, options);
+  navigator.geolocation.watchPosition(success, error, options);
 }
 
 function success(pos) {
+  console.log(pos.coords.latitude, pos.coords.longitude);
+
   var crd = pos.coords;
-  // console.log(crd.latitude);
-  // console.log(crd.longitude);
   var latitude = crd.latitude;
   var longitude = crd.longitude;
 
   saveData(latitude, longitude);
-
 }
+
+var busNumber = prompt("What is ya bus numba?");
 
 function saveData(latitude, longitude){
 
@@ -49,9 +50,8 @@ function saveData(latitude, longitude){
     longitude: longitude,
   };
 
-  var newLocationKey = firebase.database().ref().child('Location').push().key;
   var updates = {};
-  updates['/Location/' + newLocationKey] = location;
+  updates['/Location/bus' + busNumber] = location;
   firebase.database().ref().update(updates).then(function(){
     // window.location.replace('./index.html');
   }).catch(function(error) {
@@ -71,27 +71,29 @@ function initMap(lat, lng, zoom){
   });
 }
 
+var currentMarkers = {};
+
 function createMarkers(){
   var ref = firebase.database().ref('Location/');
-  ref.once('value', function(snapshot){
+  ref.on('value', function(snapshot){
     var location = snapshot.val();
-    console.log(location);
     for(var i in location){
-      console.log(i)
       var lat = location[i].latitude;
       var lng = location[i].longitude;
-      console.log(lat, lng)
       var latLng = new google.maps.LatLng(lat,lng);
       var marker = new google.maps.Marker({
         position: latLng,
         // icon: './hotspot_pulse.jpg',
         map: map
       });
+
+      // Update marker dict, clearing old marker if on existed
+      if (currentMarkers[i] !== undefined) {
+        currentMarkers[i].setMap(null);
+      }
+      currentMarkers[i] = marker;
     }
   });
-
-
-
 }
 
 })();
